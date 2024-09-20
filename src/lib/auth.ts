@@ -3,7 +3,6 @@ import User from "@/models/User";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -45,7 +44,23 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  session: {
+ 
+  callbacks: {
+    async jwt({ token, user, account }) {
+      // Persist the accessToken in the token
+      if (account) {
+        token.accessToken = account.access_token;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Add accessToken to session object
+      session.accessToken = token.accessToken;
+      return session;
+    }
+  }
+  ,
+   session:{
     strategy: "jwt",
   },
   pages: {

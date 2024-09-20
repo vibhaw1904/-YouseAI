@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface   UserTask {
+  _id: string;
   title: string;
   description?: string;
   status: 'To Do' | 'In Progress' | 'Completed';
@@ -9,6 +10,7 @@ export interface   UserTask {
 }
 
 const TaskSchema: Schema = new Schema<UserTask>({
+  
   title: {
     type: String,
     required: true,

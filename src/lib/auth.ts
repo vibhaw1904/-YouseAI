@@ -3,6 +3,7 @@ import User from "@/models/User";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -13,59 +14,59 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Connect to the database
         await connectDB();
 
-        // Check if credentials exist
         if (!credentials || !credentials.email || !credentials.password) {
           throw new Error("Missing email or password");
         }
 
-        // Find the user in the database by email
         const user = await User.findOne({ email: credentials.email }).select("+password");
 
-        // If the user doesn't exist
         if (!user) {
           throw new Error("Invalid email or password");
         }
 
-        // Compare the entered password with the hashed password in the database
         const passwordMatch = await bcrypt.compare(credentials.password, user.password);
 
-        // If the password doesn't match
         if (!passwordMatch) {
           throw new Error("Invalid email or password");
         }
 
-        // Return the user object without the password field
-        const userWithoutPassword = { ...user.toObject(), password: undefined };
-
-        return userWithoutPassword;
+        // Return user object without password
+        return { 
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          // Include any other fields you want to expose
+        };
       },
     }),
   ],
- 
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
-    async jwt({ token, user, account }) {
-      // Persist the accessToken in the token
-      if (account) {
-        token.accessToken = account.access_token;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        // Add any other user properties you want to include in the token
       }
       return token;
     },
     async session({ session, token }) {
-      // Add accessToken to session object
-      session.accessToken = token.accessToken;
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        // Add any other properties from token to session.user
+      }
       return session;
-    }
-  }
-  ,
-   session:{
-    strategy: "jwt",
+    },
   },
   pages: {
-    signIn: "/login", // Optional custom sign-in page
+    signIn: "/login",
   },
+  // Add debug logs
+  debug: process.env.NODE_ENV === "development",
 };
 
 export default authOptions;

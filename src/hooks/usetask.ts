@@ -37,14 +37,21 @@ export const useTasks=()=>{
 
         }
     }
-    const updateTask=async(id:string,updateTask : Partial<UserTask>)=>{
+    const updateTask=async(id:string,updatedTask : Partial<UserTask>)=>{
         if(!session) throw new Error('Not authenticated');
-        // try {
-        //     const response=await axios.put<UserTask(`/api/tasks/${id}`,updateTask)>
-        // } 
-        // catch (error) {
-            
-        // }
+        try {
+            const response = await axios.put<UserTask>(`/api/tasks/${id}`, updatedTask, {
+              headers: {
+                Authorization: `Bearer ${session.accessToken}`,
+              },
+            });
+            setTasks(tasks.map(task => task._id === id ? response.data : task));
+            return response.data;
+          } catch (err) {
+            setError('Failed to update task');
+            throw err;
+          }
     }
+    
     return {tasks,fetchTask}
 }

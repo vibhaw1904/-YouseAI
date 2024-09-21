@@ -3,7 +3,7 @@ import Sidebar from "@/components/SideBar";
 export default function Home() {
   return (
     <div className="">
-           <Sidebar/>
+           
 
     </div>
   );

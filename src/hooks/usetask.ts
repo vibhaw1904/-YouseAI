@@ -1,5 +1,5 @@
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from 'axios'
 interface UserTask{
     _id:string,
@@ -37,6 +37,23 @@ export const useTasks=()=>{
 
         }
     }
+    const createTask = async (newTask: Omit<Task, '_id'>) => {
+        if (!session) throw new Error('Not authenticated');
+    
+        try {
+          const response = await axios.post<Task>('/api/tasks', newTask, {
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`,
+            },
+          });
+          setTasks([...tasks, response.data]);
+          return response.data;
+        } catch (err) {
+          setError('Failed to create task');
+          throw err;
+        }
+      };
+    
     const updateTask=async(id:string,updatedTask : Partial<UserTask>)=>{
         if(!session) throw new Error('Not authenticated');
         try {
@@ -52,6 +69,25 @@ export const useTasks=()=>{
             throw err;
           }
     }
-    
-    return {tasks,fetchTask}
+    const deleteTask=async(id:string)=>{
+if(!session)throw new Error('not authenticated');
+        try {
+            await axios.delete(`api/tasks${id}`,{
+                headers:{
+                    Authorization:`Bearer ${session.accessToken}`
+                }
+            })
+            setTasks(tasks.filter(task=>task._id!==id))
+        } catch (error) {
+            setError('Failed to delete task')
+        }
+    };
+    useEffect(()=>{
+if(session){
+    fetchTask();
+}
+    },[session])
+    return {tasks,fetchTask,loading,error,deleteTask,createTask
+        ,updateTask
+    }
 }

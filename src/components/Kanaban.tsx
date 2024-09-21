@@ -1,64 +1,193 @@
-import React from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { useTasks } from '@/hooks/useTasks';
+"use client"
 
-const KanbanBoard = () => {
-  const { tasks, updateTask } = useTasks();
+import * as React from "react"
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd"
+import { Plus, MoreVertical } from "lucide-react"
 
-  const onDragEnd = (result) => {
-    if (!result.destination) return;
+import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-    const { source, destination, draggableId } = result;
+interface Task {
+  id: string
+  content: string
+}
 
-    if (source.droppableId !== destination.droppableId) {
-      const newStatus = destination.droppableId as 'To Do' | 'In Progress' | 'Completed';
-      updateTask(draggableId, { status: newStatus });
+interface Column {
+  id: string
+  title: string
+  tasks: Task[]
+}
+
+const initialData: { columns: Column[] } = {
+  columns: [
+    {
+      id: "todo",
+      title: "To Do",
+      tasks: [
+        { id: "task-1", content: "Create login page" },
+        { id: "task-2", content: "Design database schema" },
+      ],
+    },
+    {
+      id: "in-progress",
+      title: "In Progress",
+      tasks: [
+        { id: "task-3", content: "Implement user authentication" },
+      ],
+    },
+    {
+      id: "done",
+      title: "Done",
+      tasks: [
+        { id: "task-4", content: "Set up project repository" },
+      ],
+    },
+  ],
+}
+
+export default function KanbanBoard() {
+  const [columns, setColumns] = React.useState(initialData.columns)
+  const [newTask, setNewTask] = React.useState("")
+
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination } = result
+
+    // Dropped outside the list
+    if (!destination) {
+      return
     }
-  };
 
-  const columns = {
-    'To Do': tasks.filter(task => task.status === 'To Do'),
-    'In Progress': tasks.filter(task => task.status === 'In Progress'),
-    'Completed': tasks.filter(task => task.status === 'Completed'),
-  };
+    // Moving within the same list
+    if (source.droppableId === destination.droppableId) {
+      const column = columns.find((col) => col.id === source.droppableId)
+      if (column) {
+        const newTasks = Array.from(column.tasks)
+        const [reorderedItem] = newTasks.splice(source.index, 1)
+        newTasks.splice(destination.index, 0, reorderedItem)
+
+        const newColumns = columns.map((col) =>
+          col.id === source.droppableId ? { ...col, tasks: newTasks } : col
+        )
+        setColumns(newColumns)
+      }
+    } else {
+      // Moving from one list to another
+      const sourceColumn = columns.find((col) => col.id === source.droppableId)
+      const destColumn = columns.find((col) => col.id === destination.droppableId)
+      if (sourceColumn && destColumn) {
+        const sourceTasks = Array.from(sourceColumn.tasks)
+        const destTasks = Array.from(destColumn.tasks)
+        const [movedItem] = sourceTasks.splice(source.index, 1)
+        destTasks.splice(destination.index, 0, movedItem)
+
+        const newColumns = columns.map((col) => {
+          if (col.id === source.droppableId) {
+            return { ...col, tasks: sourceTasks }
+          }
+          if (col.id === destination.droppableId) {
+            return { ...col, tasks: destTasks }
+          }
+          return col
+        })
+        setColumns(newColumns)
+      }
+    }
+  }
+
+  const addNewTask = (columnId: string) => {
+    if (newTask.trim() === "") return
+
+    const newTaskItem: Task = {
+      id: `task-${Date.now()}`,
+      content: newTask,
+    }
+
+    const newColumns = columns.map((col) =>
+      col.id === columnId
+        ? { ...col, tasks: [...col.tasks, newTaskItem] }
+        : col
+    )
+
+    setColumns(newColumns)
+    setNewTask("")
+  }
+
+  const deleteTask = (columnId: string, taskId: string) => {
+    const newColumns = columns.map((col) =>
+      col.id === columnId
+        ? { ...col, tasks: col.tasks.filter((task) => task.id !== taskId) }
+        : col
+    )
+    setColumns(newColumns)
+  }
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex space-x-4">
-        {Object.entries(columns).map(([columnId, columnTasks]) => (
-          <div key={columnId} className="bg-gray-100 p-4 rounded-lg w-1/3">
-            <h2 className="text-lg font-semibold mb-4">{columnId}</h2>
-            <Droppable droppableId={columnId}>
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="space-y-2"
-                >
-                  {columnTasks.map((task, index) => (
-                    <Draggable key={task._id} draggableId={task._id} index={index}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className="bg-white p-4 rounded shadow"
-                        >
-                          <h3 className="font-semibold">{task.title}</h3>
-                          <p className="text-sm text-gray-600">{task.description}</p>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </div>
-        ))}
-      </div>
-    </DragDropContext>
-  );
-};
-
-export default KanbanBoard;
+    <div className="p-4 h-screen bg-background text-foreground">
+      <h1 className="text-2xl font-bold mb-4">Kanban Board</h1>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex flex-wrap gap-4">
+          {columns.map((column) => (
+            <div key={column.id} className="w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.33%-0.75rem)]">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{column.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Droppable droppableId={column.id}>
+                    {(provided) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="min-h-[200px]"
+                      >
+                        {column.tasks.map((task, index) => (
+                          <Draggable key={task.id} draggableId={task.id} index={index}>
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="bg-muted p-4 mb-2 rounded-md shadow-sm"
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span>{task.content}</span>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => deleteTask(column.id, task.id)}>
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                 
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </DragDropContext>
+    </div>
+  )
+}

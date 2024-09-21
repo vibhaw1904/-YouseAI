@@ -22,13 +22,13 @@ export default function Login() {
     const res = await signIn("credentials", {
       email,
       password,
-      redirect: false, // Disable automatic redirection to handle it manually
+      redirect: false, 
     });
 
     if (res?.error) {
       setError(res.error as string);
     } else if (res?.ok) {
-      router.push(callbackUrl); // Redirect manually after successful login
+      router.push(callbackUrl); 
     }
   };
 

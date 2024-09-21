@@ -37,11 +37,11 @@ export const useTasks=()=>{
 
         }
     }
-    const createTask = async (newTask: Omit<Task, '_id'>) => {
+    const createTask = async (newTask: Omit<UserTask, '_id'>) => {
         if (!session) throw new Error('Not authenticated');
     
         try {
-          const response = await axios.post<Task>('/api/tasks', newTask, {
+          const response = await axios.post<UserTask>('/api/tasks', newTask, {
             headers: {
               Authorization: `Bearer ${session.accessToken}`,
             },
@@ -69,7 +69,7 @@ export const useTasks=()=>{
             throw err;
           }
     }
-    const deleteTask=async(id:string)=>{
+const deleteTask=async(id:string)=>{
 if(!session)throw new Error('not authenticated');
         try {
             await axios.delete(`api/tasks${id}`,{

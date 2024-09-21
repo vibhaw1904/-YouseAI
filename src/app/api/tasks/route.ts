@@ -7,11 +7,15 @@ import authOptions from '@/lib/auth'; // Assuming authOptions is exported from t
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
 
-  // Connect to the database
-  await connectDB();
+  // Connect to the database with error handling
+  await connectDB().catch((err) => {
+    return res.status(500).json({ error: 'Database connection failed', message: err.message });
+  });
 
   // Get user session using next-auth
-  const session = await getServerSession(req, res, authOptions);
+  const session = await getServerSession(req, res, authOptions).catch((err) => {
+    return res.status(500).json({ error: 'Session retrieval failed', message: err.message });
+  });
 
   if (!session) {
     return res.status(401).json({ error: 'You must be signed in to access this route' });
@@ -25,8 +29,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         const tasks = await Task.find({ user: userId });
         res.status(200).json(tasks);
-      } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+      } catch (error: any) {
+        console.error('Error fetching tasks:', error);
+        res.status(500).json({ success: false, message: 'Server error while fetching tasks' });
       }
       break;
 
@@ -37,8 +42,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           user: userId,
         });
         res.status(201).json(task);
-      } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+      } catch (error: any) {
+        console.error('Error creating task:', error);
+        res.status(500).json({ success: false, message: 'Server error while creating task' });
       }
       break;
 

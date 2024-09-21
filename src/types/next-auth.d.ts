@@ -4,10 +4,14 @@ import NextAuth from "next-auth";
 declare module "next-auth" {
   interface Session {
     accessToken?: string;
+    user: {
+      id: string; // You can add any other fields you want
+    } & DefaultSession["user"]; 
   }
 
   interface User {
     accessToken?: string;
+    id: string;
   }
 }
 

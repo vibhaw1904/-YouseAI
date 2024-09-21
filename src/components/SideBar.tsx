@@ -1,68 +1,74 @@
 "use client"
-import React, { useState } from "react";
+
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { signOut } from "next-auth/react"
+import { Home, Folder, PlusCircle, LogOut } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
 import {
-  FiHome,
-  FiFolder,
-  FiPlusCircle,
-  FiLogOut,
-} from "react-icons/fi";
-import { Button } from "./ui/button"; // Assuming you already have shadcn's Button component
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { signOut } from "next-auth/react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const Sidebar = () => {
-  const [activeLink, setActiveLink] = useState("Dashboard");
+  const [activeLink, setActiveLink] = useState("Dashboard")
+  const router = useRouter()
 
   const navItems = [
-    { name: "Dashboard", icon: <FiHome /> },
-    { name: "Projects", icon: <FiFolder /> },
-  ];
+    { name: "Dashboard", icon: <Home className="w-4 h-4" />, route: "/" },
+    { name: "Kanban", icon: <Folder className="w-4 h-4" />, route: "kanban" },
+  ]
+
+  const handleClick = (item: typeof navItems[0]) => {
+    setActiveLink(item.name)
+    router.push(`/${item.route}`)
+  }
 
   return (
-    <div className="h-screen w-64 bg-gray-800 text-white flex flex-col">
-      <nav className="flex-grow overflow-y-auto">
-        <ul className="space-y-2 p-4">
-          {navItems.map((item) => (
-            <li key={item.name}>
-              <button
-                onClick={() => setActiveLink(item.name)}
-                className={`w-full flex items-center p-2 rounded-lg transition-colors duration-200 ${
-                  activeLink === item.name ? "bg-blue-600" : "hover:bg-gray-700"
-                }`}
-              >
-                <span className="mr-3">{item.icon}</span>
-                {item.name}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      <div className="p-4 border-t border-gray-700">
-        {/* New Task Button */}
-        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center">
-          <FiPlusCircle className="mr-2" />
+    <div className="h-screen w-64 bg-background border-r flex flex-col">
+      <ScrollArea className="flex-grow">
+        <nav className="p-4">
+          <ul className="space-y-2">
+            {navItems.map((item) => (
+              <li key={item.name}>
+                <Button
+                  variant={activeLink === item.name ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => handleClick(item)}
+                >
+                  {item.icon}
+                  <span className="ml-3">{item.name}</span>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </ScrollArea>
+      <div className="p-4 border-t">
+        <Button className="w-full mb-2" variant="outline">
+          <PlusCircle className="mr-2 h-4 w-4" />
           New Task
         </Button>
-
-        {/* Logout Button */}
-        <div className="mt-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center">
-                <FiLogOut className="mr-2" />
-                Logout
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login  " })}>
-                Confirm Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="w-full" variant="destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
+              Confirm Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

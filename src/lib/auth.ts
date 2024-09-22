@@ -1,8 +1,10 @@
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
+
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken"; // To create a custom accessToken
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -32,12 +34,19 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
 
-        // Return user object without password
+        // Manually create a JWT token for the session (e.g., accessToken)
+        const accessToken = jwt.sign(
+          { userId: user._id, email: user.email },
+          process.env.NEXTAUTH_SECRET || "default_secret", // Use a secret
+          { expiresIn: '1h' } // Set token expiration if needed
+        );
+
+        // Return user object with token and other fields
         return { 
           id: user._id.toString(),
           email: user.email,
           name: user.name,
-          // Include any other fields you want to expose
+          accessToken // Return this token so that it can be set in JWT and session callbacks
         };
       },
     }),
@@ -46,18 +55,20 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      // Add accessToken to token object when user logs in
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        // Add any other user properties you want to include in the token
+        token.accessToken = user.accessToken; // Add custom accessToken here
       }
       return token;
     },
     async session({ session, token }) {
+      // Attach accessToken to the session object so it can be used on the frontend
       if (token && session.user) {
-        session.user.id = token.id as string;
-        // Add any other properties from token to session.user
+        session.user.id = token.sub as string;
+        session.accessToken = token.accessToken; // Pass the token to session
       }
       return session;
     },
@@ -65,7 +76,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-  // Add debug logs
+  // secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 };
 

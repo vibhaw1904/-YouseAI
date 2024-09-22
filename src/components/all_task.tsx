@@ -58,6 +58,7 @@ export default function AllTasksWithStatus() {
     const{tasks,createTask,updateTask,deleteTask,loading,error}=useTasks()
   const [newTask, setNewTask] = React.useState<Omit<Task, 'id'>>({ title: "", description: "", status: "To Do" ,priority:"Low"})
   const [editingTask, setEditingTask] = React.useState<Task | null>(null)
+console.log(tasks);
 
   const handleAddTask = async() => {
     if (newTask.title.trim() === "") return
@@ -133,37 +134,38 @@ const handleUpdateTask = async () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tasks.map((task) => (
-              <TableRow key={task._id}>
-                <TableCell>{task.title}</TableCell>
-                <TableCell>{task.description}</TableCell>
-                <TableCell>
-                  <span className={`font-medium ${getStatusColor(task.status)}`}>
-                    {task.status}
-                  </span>
-                </TableCell>
-                <TableCell>{task.priority}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setEditingTask(task)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleDeleteTask(task._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+  {Array.isArray(tasks) && tasks.map((task) => (
+    <TableRow key={task._id}>
+      <TableCell>{task.title}</TableCell>
+      <TableCell>{task.description}</TableCell>
+      <TableCell>
+        <span className={`font-medium ${getStatusColor(task.status)}`}>
+          {task.status}
+        </span>
+      </TableCell>
+      <TableCell>{task.priority}</TableCell>
+      <TableCell>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setEditingTask(task)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleDeleteTask(task._id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
         </Table>
       </CardContent>
       <CardFooter className="flex justify-between">
